@@ -94,15 +94,20 @@ class ExperienceReplay(object):
         env_dim = self.memory[0][0][0].shape
         inputs = np.zeros((min(len_memory, batch_size), env_dim[1], env_dim[2], env_dim[3]))
         targets = np.zeros((inputs.shape[0], num_actions))
-        for i, idx in enumerate(np.random.randint(0, len_memory,
-                                                  size=inputs.shape[0])):
+        for i, idx in enumerate(np.random.randint(0, len_memory, size=inputs.shape[0])):
             state_t, action_t, reward_t, state_tp1 = self.memory[idx][0]
             game_over = self.memory[idx][1]
 
             inputs[i:i+1] = state_t
             # There should be no target values for actions not taken.
             # Thou shalt not correct actions not taken #deep
+            # state_t has shape (1,10,10,1), with the first dimension being the sample index.
+            # model.predict generates dimension of (1,3), where 3 is the number of actions.
+            # we initialize the targets to be what the model predicts the actions' values are.
             targets[i] = model.predict(state_t)[0]
+
+            # The following generates the value that should be assigned to the Q(state_t, action_t)
+            # we replace the action_t's value in the training target with Q(state_t, action_t)
             Q_sa = np.max(model.predict(state_tp1)[0])
             if game_over:  # if game_over is True
                 targets[i, action_t] = reward_t
@@ -116,7 +121,7 @@ if __name__ == "__main__":
     # parameters
     epsilon = .1  # exploration
     num_actions = 3  # [move_left, stay, move_right]
-    epoch = 1000
+    epoch = 500
     max_memory = 500
     hidden_size = 100
     batch_size = 50
@@ -181,9 +186,11 @@ if __name__ == "__main__":
             inputs, targets = exp_replay.get_batch(model, batch_size=batch_size)
 
             loss += model.train_on_batch(inputs, targets)
-        print("Epoch {:03d}/999 | Loss {:.4f} | Win count {}".format(e, loss, win_cnt))
+        print("Epoch {:03d} | Loss {:.4f} | Win count {}".format(e, loss, win_cnt))
 
-    # Save trained model weights and architecture, this will be used by the visualization code
-    model.save_weights("model.h5", overwrite=True)
-    with open("model.json", "w") as outfile:
-        json.dump(model.to_json(), outfile)
+        # Save trained model weights and architecture, this will be used by the visualization code
+        if e % 100 == 0:
+            print("Saving model")
+            model.save_weights("model.h5", overwrite=True)
+            with open("model.json", "w") as outfile:
+                json.dump(model.to_json(), outfile)
