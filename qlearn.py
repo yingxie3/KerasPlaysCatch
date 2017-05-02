@@ -5,6 +5,7 @@ from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.layers.core import Flatten
 from keras.layers.convolutional import Conv2D
+from keras.layers.convolutional import Conv1D
 from keras.optimizers import sgd
 from keras.optimizers import adam
 from keras.optimizers import adadelta
@@ -62,7 +63,8 @@ class Catch(object):
 
     def observe(self):
         canvas = self._draw_state()
-        return canvas.reshape((-1, self.grid_size, self.grid_size, 1))
+        #return canvas.reshape((-1, self.grid_size, self.grid_size, 1))
+        return canvas.reshape((-1, self.grid_size*self.grid_size, 1, 1))
 
     def act(self, action):
         self._update_state(action)
@@ -129,11 +131,14 @@ if __name__ == "__main__":
 
     model = Sequential()
     '''
+    # FC model
     model.add(Dense(hidden_size, input_shape=(grid_size**2,), activation='relu'))
     model.add(Dense(hidden_size, activation='relu'))
     model.add(Dense(num_actions))
     model.compile(sgd(lr=.2), "mse")
     '''
+    '''
+    # conv2d + FC model
     model.add(Conv2D(8, 3, input_shape=(grid_size, grid_size, 1), strides=(1, 1), padding='same', name='conv1', activation='relu'))
     model.add(Conv2D(8, 3, strides=(1, 1), padding='same', name='conv2', activation='relu'))
     model.add(Flatten(name='flatten'))
@@ -141,6 +146,14 @@ if __name__ == "__main__":
     model.add(Dense(num_actions))
     model.compile(adam(lr=.001), "mse")
     #model.compile(adadelta(), "mse")
+    '''
+    # conv1d + FC model, the Default Conv1D doesn't support multiple channels, so we still use Conv2D but with one dimension being 1.
+    model.add(Conv2D(8, (3, 1), input_shape=(grid_size*grid_size, 1, 1), strides=(1, 1), padding='same', name='conv1', activation='relu'))
+    model.add(Conv2D(8, (3, 1), strides=(1, 1), padding='same', name='conv2', activation='relu'))
+    model.add(Flatten(name='flatten'))
+    model.add(Dense(hidden_size, activation='relu'))
+    model.add(Dense(num_actions))
+    model.compile(adam(lr=.001), "mse")
 
     board = keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=10, write_graph=True,
         write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None)
