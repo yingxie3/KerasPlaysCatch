@@ -1,8 +1,13 @@
 import json
 import numpy as np
+import keras
 from keras.models import Sequential
 from keras.layers.core import Dense
+from keras.layers.core import Flatten
+from keras.layers.convolutional import Conv2D
 from keras.optimizers import sgd
+from keras.optimizers import adam
+from keras.optimizers import adadelta
 
 
 class Catch(object):
@@ -57,7 +62,7 @@ class Catch(object):
 
     def observe(self):
         canvas = self._draw_state()
-        return canvas.reshape((1, -1))
+        return canvas.reshape((-1, self.grid_size, self.grid_size, 1))
 
     def act(self, action):
         self._update_state(action)
@@ -86,8 +91,8 @@ class ExperienceReplay(object):
     def get_batch(self, model, batch_size=10):
         len_memory = len(self.memory)
         num_actions = model.output_shape[-1]
-        env_dim = self.memory[0][0][0].shape[1]
-        inputs = np.zeros((min(len_memory, batch_size), env_dim))
+        env_dim = self.memory[0][0][0].shape
+        inputs = np.zeros((min(len_memory, batch_size), env_dim[1], env_dim[2], env_dim[3]))
         targets = np.zeros((inputs.shape[0], num_actions))
         for i, idx in enumerate(np.random.randint(0, len_memory,
                                                   size=inputs.shape[0])):
@@ -118,10 +123,24 @@ if __name__ == "__main__":
     grid_size = 10
 
     model = Sequential()
+    '''
     model.add(Dense(hidden_size, input_shape=(grid_size**2,), activation='relu'))
     model.add(Dense(hidden_size, activation='relu'))
     model.add(Dense(num_actions))
     model.compile(sgd(lr=.2), "mse")
+    '''
+    model.add(Conv2D(8, 3, input_shape=(grid_size, grid_size, 1), strides=(1, 1), padding='same', name='conv1', activation='relu'))
+    model.add(Conv2D(8, 3, strides=(1, 1), padding='same', name='conv2', activation='relu'))
+    model.add(Flatten(name='flatten'))
+    model.add(Dense(hidden_size, activation='relu'))
+    model.add(Dense(num_actions))
+    model.compile(adam(lr=.001), "mse")
+    #model.compile(adadelta(), "mse")
+
+    board = keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=10, write_graph=True,
+        write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None)
+    board.set_model(model)
+
 
     # If you want to continue training from a previous model, just uncomment the line bellow
     # model.load_weights("model.h5")
@@ -161,7 +180,7 @@ if __name__ == "__main__":
             # adapt model
             inputs, targets = exp_replay.get_batch(model, batch_size=batch_size)
 
-            loss += model.train_on_batch(inputs, targets)[0]
+            loss += model.train_on_batch(inputs, targets)
         print("Epoch {:03d}/999 | Loss {:.4f} | Win count {}".format(e, loss, win_cnt))
 
     # Save trained model weights and architecture, this will be used by the visualization code
