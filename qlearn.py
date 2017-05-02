@@ -148,8 +148,8 @@ if __name__ == "__main__":
     #model.compile(adadelta(), "mse")
     '''
     # conv1d + FC model, the Default Conv1D doesn't support multiple channels, so we still use Conv2D but with one dimension being 1.
-    model.add(Conv2D(8, (3, 1), input_shape=(grid_size*grid_size, 1, 1), strides=(1, 1), padding='same', name='conv1', activation='relu'))
-    model.add(Conv2D(8, (3, 1), strides=(1, 1), padding='same', name='conv2', activation='relu'))
+    model.add(Conv2D(4, (3, 1), input_shape=(grid_size*grid_size, 1, 1), strides=(1, 1), padding='same', name='conv1', activation='relu'))
+    #model.add(Conv2D(8, (3, 1), strides=(1, 1), padding='same', name='conv2', activation='relu'))
     model.add(Flatten(name='flatten'))
     model.add(Dense(hidden_size, activation='relu'))
     model.add(Dense(num_actions))
