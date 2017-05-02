@@ -125,7 +125,7 @@ if __name__ == "__main__":
     num_actions = 3  # [move_left, stay, move_right]
     epoch = 500
     max_memory = 500
-    hidden_size = 100
+    hidden_size = 50
     batch_size = 50
     grid_size = 10
 
@@ -199,7 +199,9 @@ if __name__ == "__main__":
             inputs, targets = exp_replay.get_batch(model, batch_size=batch_size)
 
             loss += model.train_on_batch(inputs, targets)
-        print("Epoch {:03d} | Loss {:.4f} | Win count {}".format(e, loss, win_cnt))
+
+        if e % 10 == 0:
+            print("Epoch {:03d} | Loss {:.4f} | Win count {}".format(e, loss, win_cnt))
 
         # Save trained model weights and architecture, this will be used by the visualization code
         if e % 100 == 0:
