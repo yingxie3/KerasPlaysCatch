@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import keras
+import tensorflow as tf
 from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.layers.core import Flatten
@@ -153,6 +154,7 @@ if __name__ == "__main__":
     model.add(Flatten(name='flatten'))
     model.add(Dense(hidden_size, activation='relu'))
     model.add(Dense(num_actions))
+
     model.compile(adam(lr=.001), "mse")
 
     board = keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=2, write_graph=True, write_images=True)
@@ -170,6 +172,7 @@ if __name__ == "__main__":
 
     # Train
     win_cnt = 0
+    validation_data = [np.ones((batch_size, 100, 1, 1))]
     for e in range(epoch):
         loss = 0.
         env.reset()
@@ -201,6 +204,10 @@ if __name__ == "__main__":
 
         if e % 10 == 0:
             print("Epoch {:03d} | Loss {:.4f} | Win count {}".format(e, loss, win_cnt))
+
+            # on_epoch_end requires validata_data to be present. It doesn't really need
+            # to the data to get the histogram, so we just give is a pre-fabricated one.
+            board.validation_data = validation_data
             logs = {'loss': loss}
             board.on_epoch_end(e, logs)
 
