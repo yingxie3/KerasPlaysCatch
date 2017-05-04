@@ -155,8 +155,7 @@ if __name__ == "__main__":
     model.add(Dense(num_actions))
     model.compile(adam(lr=.001), "mse")
 
-    board = keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=10, write_graph=True,
-        write_images=True, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None)
+    board = keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=2, write_graph=True, write_images=True)
     board.set_model(model)
 
 
@@ -202,6 +201,9 @@ if __name__ == "__main__":
 
         if e % 10 == 0:
             print("Epoch {:03d} | Loss {:.4f} | Win count {}".format(e, loss, win_cnt))
+            logs = {'loss': loss}
+            board.on_epoch_end(e, logs)
+
 
         # Save trained model weights and architecture, this will be used by the visualization code
         if e % 100 == 0:
@@ -209,3 +211,4 @@ if __name__ == "__main__":
             model.save_weights("model.h5", overwrite=True)
             with open("model.json", "w") as outfile:
                 json.dump(model.to_json(), outfile)
+    
