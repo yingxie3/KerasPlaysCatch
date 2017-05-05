@@ -1,7 +1,9 @@
 import json
+import pdb
 import numpy as np
 import keras
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.layers.core import Flatten
@@ -219,3 +221,10 @@ if __name__ == "__main__":
             with open("model.json", "w") as outfile:
                 json.dump(model.to_json(), outfile)
     
+    # all training is done, plot the conv layers to see what features we have learned.
+    w = model.get_weights()
+    t = np.reshape(w[0], (3,4)).T
+    for i in range(t.shape[0]):
+        plt.plot(t[i])
+    plt.title('conv layer weights')
+    plt.show()
